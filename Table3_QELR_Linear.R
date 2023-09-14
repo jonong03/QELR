@@ -2,7 +2,6 @@
 
 gc(); rm(list=ls())
 library(dplyr)
-#library(data.table)
 library(geepack)
 
 beta <- c(-2.4, -2.0, -2.6)
