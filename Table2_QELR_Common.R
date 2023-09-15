@@ -9,6 +9,8 @@ gamma <- -1.4
 n_seq <- c(100,300,500)
 nmax <- max(n_seq)
 p <- 15
+iter <- 100
+seedn <- 88
 
 rqebd <- function(n, V){
   m = ncol(V)
@@ -63,11 +65,6 @@ QELR <- function(DATA){
   return(out)
 }
 
-#One Run
-dat <- datagen(beta, gamma, n=max(n_seq), p)
-QELR(dat$DAT) %>% round(.,3)
-
-#Simulation
 simdriver<- function(iter, seedn, beta, gamma, p, n_seq){
   set.seed(seedn)
   
@@ -95,7 +92,7 @@ simdriver<- function(iter, seedn, beta, gamma, p, n_seq){
   geeexc <- t(apply(G[,,1:4+8,1], c(2,3), mean))
   geeexc_b <- geeexc - true_par
   geeexc_se <- t(apply(G[,,1:4+8,2], c(2,3), mean))
-  geeexc_re <- geeexc_se
+  geeexc_re <- geeexc_se/se
   K <- cbind(c(se), c(glm), c(glm_b), c(glm_se), c(glm_re), c(geeind), c(geeind_b), c(geeind_se), c(geeind_re), c(geeexc), c(geeexc_b), c(geeexc_se), c(geeexc_re))
   colnames(K)<- c("SE", "GLM","GLM_Bias", "GLM_SE","GLM R.E.", "GEEIND","GEEIND_Bias","GEEIND_SE","GEEIND R.E.", "GEEEXC","GEEEXC_Bias","GEEEXC_SE","GEEEXC R.E.")
   
@@ -106,7 +103,51 @@ simdriver<- function(iter, seedn, beta, gamma, p, n_seq){
   
 }
 
-sim1<- simdriver(iter=3, seedn=88, beta, gamma, p=5, n_seq)
+sim1<- simdriver(iter, seedn, beta, gamma, p, n_seq)
 sim1$K
-table2<- sim1$K[,c(1:4,seq(6,14, by=2))]
+table2<- sim1$K[,c(1:4,seq(6,16, by=2))]
 table2
+
+
+
+# Exclude Divergence Cases for GEE-EXC ------------------------------------
+G<- sim1$OUT[1:iter,,,]
+
+# Define and calculate divergence
+threshold<- 1
+max.se<- apply(G[,,1:4+8,2],c(1,2),max)  # Max SE in each iteration
+divergence<- max.se > threshold   # If max SE of any sets of estimates > threshold, define as a divergence case.
+divergence_rate <- apply(divergence,2, mean)
+divergence_rate
+
+
+# Recalculate statistics after excluding divergence cases
+
+geeexc<- NULL; geeexc_se<- NULL
+for (i in 1:length(n_seq)){
+  new.est<- apply(G[!divergence[,i],i,1:4+8,1], 2, mean)
+  new.se<- apply(G[!divergence[,i],i,1:4+8,2], 2, mean)
+  geeexc<- cbind(geeexc, new.est)
+  geeexc_se<- cbind(geeexc_se, new.se)
+}
+
+geeexc_b <- geeexc - true_par
+geeexc_b
+se <- t(apply(newG[,,1:4,1], c(2,3), sd))
+geeexc_re <- geeexc_se/se
+geeexc_re
+
+
+# Update Table 2
+table2$`GEEEXC_Bias`<- c(geeexc_b)
+table2$`GEEEXC R.E.`<- geeexc_re
+
+table2
+
+
+
+
+
+#One Run
+#dat <- datagen(beta, gamma, n=max(n_seq), p)
+#QELR(dat$DAT) %>% round(.,3)
