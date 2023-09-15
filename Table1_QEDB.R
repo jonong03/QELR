@@ -40,12 +40,13 @@ RandomQEBD <- function(n, V){
   m = ncol(V)
   config0 = expand.grid(rep(list(c(0,1)),m)) %>% as.matrix
   
-  pmf <- function(V, y) exp(sum((V%*%y)*y))
-  pr <- sapply(1:nrow(config0), function(i) pmf(V, config0[i,]))
+  pmf <- function(U, y) exp(sum((U%*%y)*y))
+  pr <- sapply(1:nrow(config0), function(i) pmf(U= V, y= config0[i,]))
   cdf <- cumsum(pr)/sum(pr)
   Y <- sapply(1:n, function(x) config0[sum(cdf < runif(1)) + 1,])
   return(t(Y))
 }
+
 
 # Function 3: Parameter estimation 
 # Y: a "n x m" qebd data matrix.

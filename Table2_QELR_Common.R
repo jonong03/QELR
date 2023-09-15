@@ -1,6 +1,5 @@
 #Table2: Quadratic Exponential Logistic Regression (Common)
 
-rm(list=ls()); gc()
 library(dplyr)
 library(geepack)
 
@@ -10,16 +9,17 @@ library(geepack)
 # Function: Random generation for QEBD
 # n: Number of sample data to be generated
 # V: A "mxm"square and diagonal matrix, with main effects placed at diagonal and interaction effects placed at off-diagonal position
-DensityQEBD <- function(n, V){
+RandomQEBD <- function(n, V){
   m = ncol(V)
   config0 = expand.grid(rep(list(c(0,1)),m)) %>% as.matrix
   
-  pmf <- function(V, y) exp(sum((V%*%y)*y))
-  pr <- sapply(1:nrow(config0), function(i) pmf(V, config0[i,]))
+  pmf <- function(U, y) exp(sum((U%*%y)*y))
+  pr <- sapply(1:nrow(config0), function(i) pmf(U= V, y= config0[i,]))
   cdf <- cumsum(pr)/sum(pr)
   Y <- sapply(1:n, function(x) config0[sum(cdf < runif(1)) + 1,])
   return(t(Y))
 }
+
 
 # Function: Generate simulation data for QELR (Common Interaction Effect)
 # beta: true parameter values for main effects. Length >= 1
@@ -34,7 +34,7 @@ GenData <- function(beta, gamma, n, p){
   
   for (i in 1:n){
     diag(P[[i]])<-  X[(i*p-p+1): (i*p),] %*% beta
-    Y[i,]<- DensityQEBD(1, P[[i]])
+    Y[i,]<- RandomQEBD(1, P[[i]])
   }
   
   # Design matrix
