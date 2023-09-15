@@ -131,16 +131,17 @@ for (i in 1:length(n_seq)){
   geeexc_se<- cbind(geeexc_se, new.se)
 }
 
+true_par <- c(beta, gamma)
 geeexc_b <- geeexc - true_par
 geeexc_b
-se <- t(apply(newG[,,1:4,1], c(2,3), sd))
+se <- t(apply(G[,,1:4,1], c(2,3), sd))
 geeexc_re <- geeexc_se/se
 geeexc_re
 
 
 # Update Table 2
 table2$`GEEEXC_Bias`<- c(geeexc_b)
-table2$`GEEEXC R.E.`<- geeexc_re
+table2$`GEEEXC R.E.`<- c(geeexc_re)
 
 table2
 
