@@ -210,7 +210,7 @@ Q[upper.tri(Q, diag=TRUE)] = 0
 loc<- which(Q==0, arr.ind=TRUE,useNames=TRUE) %>% as.data.frame %>% arrange(row) 
 var_name<- paste0(loc$row, ":",loc$col)
 rownames(table1)<- var_name
-colnames(table1)<- c("Truth", "Emp. S.D.", "MLE Bias", "MLE R.E.", "GLM Bias", "GLM R.E.", "GEE-IND Bias", "GEEIND R.E.")
+colnames(table1)<- c("Truth", "Emp. S.D.", "MLE Bias", "MLE R.E.", "GLM Bias", "GLM R.E.", "GEE-IND Bias", "GEE-IND R.E.")
 
 top<- sapply(1:length(var_name), function(x) unlist(strsplit(var_name[x],":"))[1] == unlist(strsplit(var_name[x],":"))[2] ) %>% which
 bottom<- sapply(1:length(var_name), function(x) unlist(strsplit(var_name[x],":"))[1] != unlist(strsplit(var_name[x],":"))[2] ) %>% which
@@ -238,7 +238,7 @@ xtable::xtable(table1, digits=3)
 #   \centering
 #   \begin{tabular}{rrrrrrrrr}
 #   \hline
-#   & Truth & Emp. S.D. & MLE Bias & MLE R.E. & GLM Bias & GLM R.E. & GEE-IND Bias & GEEIND R.E. \\ 
+#   & Truth & Emp. S.D. & MLE Bias & MLE R.E. & GLM Bias & GLM R.E. & GEE-IND Bias & GEE-IND R.E. \\ 
 #   \hline
 #   1:1 & -1.500 & 0.439 & -0.063 & 1.045 & -0.064 & 0.766 & -0.064 & 1.046 \\ 
 #   2:2 & -0.750 & 0.381 & -0.015 & 0.989 & -0.015 & 0.737 & -0.015 & 0.988 \\ 
