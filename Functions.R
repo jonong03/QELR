@@ -176,6 +176,10 @@ EstQEBD <- function(Y, method){
     se <- vcov_m %>% diag %>% sqrt
     
     output <- cbind(Estimate=est$estimate, se, zv= est$estimate/se, pv=pnorm(-abs(est$estimate/se)))
+<<<<<<< HEAD
+=======
+    
+>>>>>>> c4e24735a4bd4a98f8fbaa81bbe3fc59ceb63ab3
   }
   
   if(method=="geeind"){
@@ -188,9 +192,14 @@ EstQEBD <- function(Y, method){
     V <- vcov(gee)
     se <- diag(V) %>% sqrt
     
+<<<<<<< HEAD
     o2<- QIC(gee)
     output<- cbind(est, se, est/se, pnorm(-abs(est/se)))
 
+=======
+    output<- cbind(est, se, est/se, pnorm(-abs(est/se)))
+    
+>>>>>>> c4e24735a4bd4a98f8fbaa81bbe3fc59ceb63ab3
   }
   
   if(method=="logit"){
@@ -203,7 +212,11 @@ EstQEBD <- function(Y, method){
     se <- diag(V) %>% sqrt
     
     output<- cbind(est, se, est/se, pnorm(-abs(est/se)))
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> c4e24735a4bd4a98f8fbaa81bbe3fc59ceb63ab3
   }  
   
   # Reformat Output
@@ -211,8 +224,11 @@ EstQEBD <- function(Y, method){
   colnames(output)<- c("Estimate", "Std. Error", "z value", "Pr(|z|)")
   rownames(output)<- var_name
   
+<<<<<<< HEAD
   if(method=="geeind") output <- list(output= output, qic = o2)
   
+=======
+>>>>>>> c4e24735a4bd4a98f8fbaa81bbe3fc59ceb63ab3
   return(output)
   
 }
@@ -220,19 +236,32 @@ EstQEBD <- function(Y, method){
 
 # Function 4: Estimate parameters for QELR Data
 EstQELR <- function(DATA){
+<<<<<<< HEAD
   #aa0 <- glm(y~.-1-id, family=binomial, data=DATA) %>% summary %>% coef
   #col_name <- colnames(aa0)
   #row_name <- rownames(aa0)
+=======
+  aa0 <- glm(y~.-1-id, family=binomial, data=DATA) %>% summary %>% coef
+  col_name <- colnames(aa0)
+  row_name <- rownames(aa0)
+>>>>>>> c4e24735a4bd4a98f8fbaa81bbe3fc59ceb63ab3
   rownames(aa0) <- paste0("glm_", row_name)
   aa1 <- geeglm(y~.-1-id, family=binomial, id=id, 
                 data=DATA, corstr="independence") %>% summary %>% coef
   colnames(aa1) <- col_name
   rownames(aa1) <- paste0("geeind_", row_name)
   
+<<<<<<< HEAD
   #aa2 <- geeglm(y~.-1-id, family=binomial, id=id, 
   #              data=DATA, corstr="exchangeable") %>% summary %>% coef
   #colnames(aa2) <- col_name
   #rownames(aa2) <- paste0("geeexc_", row_name)
+=======
+  aa2 <- geeglm(y~.-1-id, family=binomial, id=id, 
+                data=DATA, corstr="exchangeable") %>% summary %>% coef
+  colnames(aa2) <- col_name
+  rownames(aa2) <- paste0("geeexc_", row_name)
+>>>>>>> c4e24735a4bd4a98f8fbaa81bbe3fc59ceb63ab3
   
   out<- as.matrix(rbind(aa0, aa1, aa2))
   return(out)
