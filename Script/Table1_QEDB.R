@@ -1,5 +1,6 @@
 # Table 1: Quadratic Exponential Distribution
 
+pacman::p_load(dplyr, geepack, gee)
 library(dplyr)
 library(geepack)
 
@@ -109,14 +110,52 @@ EstQEBD <- function(Y, method){
     
   }
 
-  if(method=="geeind"){
+  if(method=="geepack"){
     
     X<- designX(Y, var_name)
     ID= rep(1:n, each = m)
     
-    gee <- geeglm(c(t(Y))~ 0+X, id=ID, family= binomial, corstr= "independence")
-    est <- coef(gee)
-    V <- vcov(gee)
+    geeobj <- geepack::geeglm(c(t(Y))~ 0+X, id=ID, family= binomial, corstr= "independence")
+    est <- coef(geeobj)
+    V <- vcov(geeobj)
+    se <- diag(V) %>% sqrt
+    
+    output<- cbind(est, se, est/se, pnorm(-abs(est/se)))
+    
+  }
+  
+  if(method=="geenaive"){
+    
+    X<- designX(Y, var_name)
+    ID= rep(1:n, each = m)
+
+    suppressMessages({
+      sink("NUL")
+      geeobj<- gee::gee(c(t(Y))~ 0+X, id=ID, family= binomial, corstr= "independence")
+      sink() 
+    })
+    
+    est <- coef(geeobj)
+    V<- geeobj$naive.variance
+    se <- diag(V) %>% sqrt
+    
+    output<- cbind(est, se, est/se, pnorm(-abs(est/se)))
+    
+  }
+  
+  if(method=="geerobust"){
+    
+    X<- designX(Y, var_name)
+    ID= rep(1:n, each = m)
+    
+    suppressMessages({
+      sink("NUL")
+      geeobj<- gee::gee(c(t(Y))~ 0+X, id=ID, family= binomial, corstr= "independence")
+      sink() 
+    })
+    
+    est <- coef(geeobj)
+    V<- geeobj$robust.variance
     se <- diag(V) %>% sqrt
     
     output<- cbind(est, se, est/se, pnorm(-abs(est/se)))
@@ -146,16 +185,7 @@ EstQEBD <- function(Y, method){
 }
 
 
-# Run One Example ---------------------------------------------------------
-# Y<- RandomQEBD(n=300, V=V)
-# EstQEBD(Y, method="mle")
-# EstQEBD(Y, method="logit")
-# EstQEBD(Y, method="geeind")
-
-
-
 # Simulation --------------------------------------------------------------
-
 SimDriver <- function(iter, seedn, n, V){
   set.seed(seedn)
   p<- dim(V)[1]
@@ -163,10 +193,12 @@ SimDriver <- function(iter, seedn, n, V){
   
   Yn <- lapply(1:iter, function(i) RandomQEBD(n, V))
   
-  out1<- lapply(Yn, function(dat) EstQEBD(dat, method="geeind")) %>% do.call(rbind,.) %>% as.matrix
+  out1<- lapply(Yn, function(dat) EstQEBD(dat, method="geeglm")) %>% do.call(rbind,.) %>% as.matrix
   out2<- lapply(Yn, function(dat) EstQEBD(dat, method="logit")) %>% do.call(rbind,.)  %>% as.matrix
   out3<- lapply(Yn, function(dat) EstQEBD(dat, method="mle")) %>% do.call(rbind,.) %>% as.matrix
-  OUT<- list(geeind= out1, logit= out2, mle= out3)                            
+  out4<- lapply(Yn, function(dat) EstQEBD(dat, method="geenaive")) %>% do.call(rbind,.) %>% as.matrix
+  out5<- lapply(Yn, function(dat) EstQEBD(dat, method="geerobust")) %>% do.call(rbind,.) %>% as.matrix
+  OUT<- list(geeind= out1, geenaive= out4, geerobust= out5, logit= out2, mle= out3)                            
   
   V[lower.tri(V)] <-   V[lower.tri(V)] * 2
   truth <-   V[lower.tri(V, diag=TRUE)]
@@ -183,15 +215,26 @@ SimDriver <- function(iter, seedn, n, V){
   qebd_b <- qebd - truth
   qebd_se <- apply(matrix(out1[,2], nrow = iter, ncol= m2, byrow = TRUE), 2, mean)
   qebd_re <- qebd_se/ se
+  geenaive <- apply(matrix(out1[,1], nrow = iter, ncol= m2, byrow = TRUE), 2, mean)
+  geenaive_b <- geenaive - truth
+  geenaive_se <- apply(matrix(out1[,2], nrow = iter, ncol= m2, byrow = TRUE), 2, mean)
+  geenaive_re <- geenaive_se/ se
+  geerobust <- apply(matrix(out1[,1], nrow = iter, ncol= m2, byrow = TRUE), 2, mean)
+  geerobust_b <- geerobust - truth
+  geerobust_se <- apply(matrix(out1[,2], nrow = iter, ncol= m2, byrow = TRUE), 2, mean)
+  geerobust_re <- geerobust_se/ se
   
-  K<- cbind(truth, se, mle, mle_b, mle_se, mle_re, logit, logit_b, logit_se, logit_re, qebd, qebd_b, qebd_se, qebd_re)
+  K<- cbind(truth, se, mle, mle_b, mle_se, mle_re, logit, logit_b, logit_se, logit_re, 
+            qebd, qebd_b, qebd_se, qebd_re,
+            geenaive, geenaive_b, geenaive_se, geenaive_re,
+            geerobust, geerobust_b, geerobust_se, geerobust_re)
   
   return(list(OUT= OUT, K= K))
   
 }
 
 # Parameter setup
-iter<- 500
+iter<- 10 #500
 seedn<- 88
 n<- 300
 gamma<- 0.4
@@ -200,8 +243,16 @@ a<- rep(c(-1,1), length= m)
 V<- (a %*% t(a)) * 0.4/2
 diag(V) <- seq(-1.5, 1.5, length= m)
 
+# Run One Example ---------------------------------------------------------
+Y<- RandomQEBD(n=300, V=V)
+EstQEBD(Y, method="mle")
+EstQEBD(Y, method="logit")
+EstQEBD(Y, method="geepack")
+EstQEBD(Y, method="geenaive")
+EstQEBD(Y, method="geerobust")
+
 sim1<- SimDriver(iter, seedn, n, V)
-table1<- sim1$K[,c(1,2,4,6,8,10,12,14)] %>% round(.,3)
+table1<- sim1$K[,c(1,2,4,6,8,10,12,14,16,18,20,22)] %>% round(.,3)
 table1
 
 # Reformat table 1
