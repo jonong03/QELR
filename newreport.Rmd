@@ -1,0 +1,144 @@
+---
+title: "GEE Comparison"
+author: "Jon Ong"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+rm(list=ls()); gc()
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(gee, geepack, dplyr, data.table)
+load("Output/batch0316.rda")
+
+checkdiff<- function(listA, listB){
+  convergeID_A<- !sapply(listA, anyNA)
+  convergeID_B<- !sapply(listB, anyNA)
+  convergeID <- which(convergeID_A * convergeID_B ==1)
+  A<- lapply(convergeID, function(i) listA[[i]]) %>% do.call(rbind,.)
+  B<- lapply(convergeID, function(i) listB[[i]]) %>% do.call(rbind,.)
+  DIFF<- A-B
+
+  par(mfrow=c(1,2))
+  hist(DIFF[,1], main= "Difference in mean estimates", xlab = "GEEPACK - GEE")
+  hist(DIFF[,2], main= "Difference in se estimates", xlab = "GEEPACK - GEE")
+  cat("number of convergence:" , length(convergeID), "out of", length(listA),"\n\n")
+  summary(DIFF[,c(1,2)]) %>% return
+}
+```
+
+## Simulation Setup
+
+|      | iter | n   | p   | QELR Param |
+|------|------|-----|-----|------------|
+| Sim1 | 500  | 300 | 3   | V1         |
+| Sim2 | 500  | 300 | 3   | V2         |
+| Sim3 | 500  | 300 | 5   | V3         |
+| Sim4 | 500  | 300 | 10  | V4         |
+| Sim5 | 500  | 300 | 12  | V5         |
+
+Remarks:
+
+1.  I've excluded the "unstructured" correlation structure from simulation.
+
+2.  In terms of gee parameters:
+
+    1.  Maxiter: Manually increased maxiter to a large number (eg. 200), when working correlation is not independent.
+
+    2.  Scale.fixed: Sometimes solutions would converge when scale.fixed = TRUE (default = FALSE). Currently set as FALSE
+
+3.  GEE package: only used the sandwich estimator’s result (Robust variance)
+
+```{r}
+allout$V1 %>% round(.,2)
+allout$V2 %>% round(.,2)
+allout$V3 %>% round(.,2)
+allout$V4 %>% round(.,2)
+
+```
+
+## Differences Between GEE and GEEPACK: Do both packages generate the same estimates?
+
+Short answer: YES for independence correlation.
+
+GEE stops and returns an error message when solution diverges, however GEEPACK would still produce (erroneous, some extremely large values) estimates.
+
+The below analysis answers a few questions to address the comparison/ differences:
+
+1.  Out of 500 simulations, how many converged solutions do we get?
+
+```{r}
+rbind(sim1= sapply(allout$sim1$convergecase, sum), 
+      sim2= sapply(allout$sim2$convergecase, sum), 
+      sim3= sapply(allout$sim3$convergecase, sum)) %>% t()
+```
+
+1.  Distribution of the differences between GEE and GEEPACK estimates (among the converged cases)?
+
+    ##### Sim1
+
+    1.  Independence correlation shows negligible differences.
+    2.  Exchangeable correlation shows noticeable differences. This refers to the 72 converged cases from "GEE". Could it be that GEEPACK and GEE yield different divergence/ convergence cases? Further deep dive can be done here.
+    3.  AR-1: only 1 converged case here, no comment.
+
+```{r, echo= TRUE}
+checkdiff(allout$sim1$OUT$geepack_ind, allout$sim1$OUT$gee_ind)
+checkdiff(allout$sim1$OUT$geepack_exc, allout$sim1$OUT$gee_exc)
+checkdiff(allout$sim1$OUT$geepack_ar1, allout$sim1$OUT$gee_ar1)
+```
+
+##### Sim2
+
+1.  Independence correlation shows negligible differences.
+2.  Exchangeable correlation shows noticeable differences in both packages, using the 490 converged cases from GEE.
+3.  AR-1: 0 converged case here, no comparison/ comment.
+
+```{r}
+checkdiff(allout$sim2$OUT$geepack_ind, allout$sim2$OUT$gee_ind)
+checkdiff(allout$sim2$OUT$geepack_exc, allout$sim2$OUT$gee_exc)
+#checkdiff(allout$sim2$OUT$geepack_ar1, allout$sim2$OUT$gee_ar1) # no convergence cases
+
+
+```
+
+##### Sim3
+
+1.  Independence correlation shows negligible differences.
+2.  Exchangeable correlation shows noticeable differences in both packages, using the 93 converged cases from GEE.
+3.  AR-1: 0 converged case here, no comparison/ comment.
+
+```{r}
+checkdiff(allout$sim3$OUT$geepack_ind, allout$sim3$OUT$gee_ind)
+checkdiff(allout$sim3$OUT$geepack_exc, allout$sim3$OUT$gee_exc)
+#checkdiff(allout$sim3$OUT$geepack_ar1, allout$sim3$OUT$gee_ar1) # no convergence cases
+
+```
+
+## Differences across different working correlations: Do all correlation structures generate the same estimates?
+
+This can be answered by checking the bias and relative s.e:
+
+1.  Independence correlation: already proved from previous simulation that it guarantees good estimates for parameters.
+2.  Exchangeable correlation: poor estimates basedon the converged results from GEE.
+3.  AR1 correlation: almost no convergence, hence no comment.
+
+##### Sim1 
+
+```{r, echo = FALSE}
+allout$sim1$K$gee_ind %>% round(.,4)
+allout$sim1$K$gee_exc %>% round(.,4)
+```
+
+##### Sim2
+
+```{r, echo = FALSE}
+allout$sim2$K$gee_ind %>% round(.,4)
+allout$sim2$K$gee_exc %>% round(.,4)
+```
+
+##### Sim3
+
+```{r, echo = FALSE}
+allout$sim3$K$gee_ind %>% round(.,4)
+allout$sim3$K$gee_exc %>% round(.,4)
+```
