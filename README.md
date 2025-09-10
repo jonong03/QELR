@@ -1,2 +1,4 @@
 # QELR
-Code for simulation examples presented in manuscript: Independence Working Correlation Only: GEE for Quadratic Exponential Logistic Regressions (W.Y. Ong, S-M Lee, C-M Hsueh, S-M Chang, 2023)
+Code for tables presented in manuscript: 
+"An Accurate Standard Error Estimation for Quadratic Exponential Logistic Regressions by Applying Generalized Estimating Equations to Pseudo-Likelihoods"
+Full author list: Wei Yong Ong; Shao-Man Lee; Chia-Ming Hsueh; Sheng-Mao Chang
